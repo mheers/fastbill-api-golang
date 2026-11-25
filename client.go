@@ -147,6 +147,9 @@ func (c *Client) Do(ctx context.Context, req Request, out any) error {
 // DoMultipart sends req as the part "httpbody" and the file as the part
 // "document", which is how FastBill takes uploads.
 func (c *Client) DoMultipart(ctx context.Context, req Request, file io.Reader, fileName string, out any) error {
+	if file == nil {
+		return fmt.Errorf("fastbill %s: file is nil", req.Service)
+	}
 	payload, err := json.Marshal(req)
 	if err != nil {
 		return fmt.Errorf("fastbill %s: encode request: %w", req.Service, err)

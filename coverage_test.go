@@ -71,6 +71,13 @@ func TestDoEncodeErrors(t *testing.T) {
 	}
 }
 
+func TestDoMultipartRejectsNilFile(t *testing.T) {
+	client := fastbill.NewClient("a", "b")
+	if err := client.DoMultipart(ctx, fastbill.Request{Service: "document.create"}, nil, "x.pdf", nil); err == nil {
+		t.Error("DoMultipart with a nil file passed")
+	}
+}
+
 func TestDoMultipartReadError(t *testing.T) {
 	client := fastbill.NewClient("a", "b")
 	err := client.DoMultipart(ctx, fastbill.Request{Service: "document.create"}, failingReader{}, "x.pdf", nil)
