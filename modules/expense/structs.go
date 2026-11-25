@@ -3,7 +3,7 @@ package expense
 import (
 	"encoding/json"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
+	"github.com/mheers/fastbill-api-golang"
 )
 
 // Filter narrows expense.get. Dates are YYYY-MM-DD.

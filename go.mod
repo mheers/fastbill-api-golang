@@ -1,3 +1,3 @@
-module github.com/malsch-solutions/fastbill-go-sdk/v2
+module github.com/mheers/fastbill-api-golang
 
 go 1.25

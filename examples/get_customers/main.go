@@ -9,8 +9,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/modules/customer"
+	"github.com/mheers/fastbill-api-golang"
+	"github.com/mheers/fastbill-api-golang/modules/customer"
 )
 
 func main() {

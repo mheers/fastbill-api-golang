@@ -5,7 +5,7 @@ package invoice
 import (
 	"context"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
+	"github.com/mheers/fastbill-api-golang"
 )
 
 // Client calls the invoice services.
@@ -37,9 +37,14 @@ func (c *Client) Create(ctx context.Context, req *Request) (CreateResponse, erro
 	return res, fastbill.StatusResponse{Status: res.Status}.Err("invoice.create")
 }
 
-// Update changes a draft invoice.
-func (c *Client) Update(ctx context.Context, req *Request) error {
-	return c.status(ctx, "invoice.update", req)
+// Update changes a draft invoice. It returns the invoice and document IDs
+// FastBill reports for the update.
+func (c *Client) Update(ctx context.Context, req *Request) (UpdateResponse, error) {
+	var res UpdateResponse
+	if err := c.r.Do(ctx, fastbill.DataRequest("invoice.update", req), &res); err != nil {
+		return res, err
+	}
+	return res, fastbill.StatusResponse{Status: res.Status}.Err("invoice.update")
 }
 
 // Delete deletes a draft invoice.
@@ -56,9 +61,30 @@ func (c *Client) Complete(ctx context.Context, invoiceID fastbill.ID) (CompleteR
 	return res, fastbill.StatusResponse{Status: res.Status}.Err("invoice.complete")
 }
 
-// Cancel cancels a finalized invoice.
-func (c *Client) Cancel(ctx context.Context, invoiceID fastbill.ID) error {
-	return c.status(ctx, "invoice.cancel", idRequest{InvoiceID: invoiceID})
+// Cancel cancels an invoice completely. It returns the ID of the
+// cancellation invoice FastBill wrote.
+func (c *Client) Cancel(ctx context.Context, invoiceID fastbill.ID) (CancelResponse, error) {
+	return c.cancel(ctx, cancelRequest{InvoiceID: invoiceID})
+}
+
+// CancelPartial cancels part of an invoice. After a partial cancellation,
+// only further partial cancellations are possible.
+func (c *Client) CancelPartial(ctx context.Context, req *PartialCancellationRequest) (CancelResponse, error) {
+	return c.cancel(ctx, cancelRequest{
+		InvoiceID:           req.InvoiceID,
+		PartialCancellation: fastbill.Yes,
+		ItemText:            req.ItemText,
+		NetAmount:           req.NetAmount,
+		VatPercent:          req.VatPercent,
+	})
+}
+
+func (c *Client) cancel(ctx context.Context, req cancelRequest) (CancelResponse, error) {
+	var res CancelResponse
+	if err := c.r.Do(ctx, fastbill.DataRequest("invoice.cancel", req), &res); err != nil {
+		return res, err
+	}
+	return res, fastbill.StatusResponse{Status: res.Status}.Err("invoice.cancel")
 }
 
 // Lock locks an invoice against changes.

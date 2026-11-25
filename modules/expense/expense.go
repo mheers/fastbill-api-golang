@@ -6,7 +6,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
+	"github.com/mheers/fastbill-api-golang"
 )
 
 // Client calls the expense services.

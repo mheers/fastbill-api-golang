@@ -1,6 +1,6 @@
 package contact
 
-import "github.com/malsch-solutions/fastbill-go-sdk/v2"
+import "github.com/mheers/fastbill-api-golang"
 
 // Filter narrows contact.get.
 type Filter struct {

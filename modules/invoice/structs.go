@@ -3,7 +3,7 @@ package invoice
 import (
 	"encoding/json"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
+	"github.com/mheers/fastbill-api-golang"
 )
 
 // Types of invoices (TYPE).
@@ -30,7 +30,10 @@ type Filter struct {
 	// Type is outgoing, draft or credit.
 	Type string `json:"TYPE,omitempty"`
 	// Subtype is standard, progress_invoice or final_invoice.
-	Subtype string        `json:"SUBTYPE,omitempty"`
+	Subtype string `json:"SUBTYPE,omitempty"`
+	// State is unpaid, overdue, paid, canceled or, for credit notes,
+	// issued.
+	State   string        `json:"STATE,omitempty"`
 	IsGross fastbill.Flag `json:"IS_GROSS,omitempty"`
 	// Month and Year are deprecated by FastBill; use StartDate and EndDate.
 	Month int `json:"MONTH,omitempty"`
@@ -94,16 +97,31 @@ type Invoice struct {
 	VatCase                string                 `json:"VAT_CASE"`
 	CashDiscountPercent    fastbill.Number        `json:"CASH_DISCOUNT_PERCENT"`
 	CashDiscountDays       fastbill.Number        `json:"CASH_DISCOUNT_DAYS"`
+	DiscountBaseAmount     fastbill.Number        `json:"DISCOUNT_BASE_AMOUNT"`
+	DiscountPercent        fastbill.Number        `json:"DISCOUNT_PERCENT"`
+	DiscountAmount         fastbill.Number        `json:"DISCOUNT_AMOUNT"`
+	DiscountTotal          fastbill.Number        `json:"DISCOUNT_TOTAL"`
 	SubTotal               fastbill.Number        `json:"SUB_TOTAL"`
 	VatTotal               fastbill.Number        `json:"VAT_TOTAL"`
 	Total                  fastbill.Number        `json:"TOTAL"`
 	VatItems               fastbill.List[VatItem] `json:"VAT_ITEMS"`
 	Items                  fastbill.List[Item]    `json:"ITEMS"`
 	Payments               fastbill.List[Payment] `json:"PAYMENTS"`
+	Comments               fastbill.List[Comment] `json:"COMMENTS"`
 	PaymentInfo            string                 `json:"PAYMENT_INFO"`
 	LastUpdate             string                 `json:"LASTUPDATE"`
 	DocumentURL            string                 `json:"DOCUMENT_URL"`
 	DetailsURL             string                 `json:"DETAILS_URL"`
+	// ReferencedInvoiceID is the document this one was derived from: the
+	// estimate for an estimate invoice, the invoice for a cancellation.
+	ReferencedInvoiceID fastbill.ID `json:"REFERENCED_INVOICE_ID"`
+}
+
+// Comment is a comment on an invoice.
+type Comment struct {
+	Date          string        `json:"DATE"`
+	Comment       string        `json:"COMMENT"`
+	CommentPublic fastbill.Flag `json:"COMMENT_PUBLIC"`
 }
 
 // Item is a line of an invoice.
@@ -114,10 +132,15 @@ type Item struct {
 	Quantity      fastbill.Number `json:"QUANTITY,omitempty"`
 	Unit          string          `json:"UNIT,omitempty"`
 	UnitPrice     fastbill.Number `json:"UNIT_PRICE,omitempty"`
-	VatPercent    fastbill.Number `json:"VAT_PERCENT,omitempty"`
-	VatValue      fastbill.Number `json:"VAT_VALUE,omitempty"`
-	CompleteNet   fastbill.Number `json:"COMPLETE_NET,omitempty"`
-	CompleteGross fastbill.Number `json:"COMPLETE_GROSS,omitempty"`
+	// DiscountBaseAmount is the unit price before the item discount.
+	DiscountBaseAmount fastbill.Number `json:"DISCOUNT_BASE_AMOUNT,omitempty"`
+	DiscountPercent    fastbill.Number `json:"DISCOUNT_PERCENT,omitempty"`
+	// DiscountAmount is the discount per unit.
+	DiscountAmount fastbill.Number `json:"DISCOUNT_AMOUNT,omitempty"`
+	VatPercent     fastbill.Number `json:"VAT_PERCENT,omitempty"`
+	VatValue       fastbill.Number `json:"VAT_VALUE,omitempty"`
+	CompleteNet    fastbill.Number `json:"COMPLETE_NET,omitempty"`
+	CompleteGross  fastbill.Number `json:"COMPLETE_GROSS,omitempty"`
 	// Category is kept as sent; FastBill does not document its shape
 	// (v1 saw a list).
 	Category  json.RawMessage `json:"CATEGORY,omitempty"`
@@ -164,6 +187,10 @@ type Request struct {
 	ServicePeriodEnd     string          `json:"SERVICE_PERIOD_END,omitempty"`
 	CashDiscountPercent  fastbill.Number `json:"CASH_DISCOUNT_PERCENT,omitempty"`
 	CashDiscountDays     fastbill.Number `json:"CASH_DISCOUNT_DAYS,omitempty"`
+	// DiscountPercent is the document discount (0–100).
+	DiscountPercent fastbill.Number `json:"DISCOUNT_PERCENT,omitempty"`
+	// DiscountAmount is the document discount as a net amount.
+	DiscountAmount fastbill.Number `json:"DISCOUNT_AMOUNT,omitempty"`
 	// VatCase is e.g. standard or small_business_regulation.
 	VatCase                string        `json:"VAT_CASE,omitempty"`
 	IsGross                fastbill.Flag `json:"IS_GROSS,omitempty"`
@@ -176,14 +203,53 @@ type Request struct {
 
 // CreateResponse is the answer of invoice.create.
 type CreateResponse struct {
-	Status    string      `json:"STATUS"`
-	InvoiceID fastbill.ID `json:"INVOICE_ID"`
+	Status        string      `json:"STATUS"`
+	InvoiceID     fastbill.ID `json:"INVOICE_ID"`
+	DocumentID    fastbill.ID `json:"DOCUMENT_ID"`
+	InvoiceNumber string      `json:"INVOICE_NUMBER"`
+}
+
+// UpdateResponse is the answer of invoice.update.
+type UpdateResponse struct {
+	Status     string      `json:"STATUS"`
+	InvoiceID  fastbill.ID `json:"INVOICE_ID"`
+	DocumentID fastbill.ID `json:"DOCUMENT_ID"`
 }
 
 // CompleteResponse is the answer of invoice.complete.
 type CompleteResponse struct {
-	Status        string `json:"STATUS"`
-	InvoiceNumber string `json:"INVOICE_NUMBER"`
+	Status        string      `json:"STATUS"`
+	InvoiceID     fastbill.ID `json:"INVOICE_ID"`
+	InvoiceNumber string      `json:"INVOICE_NUMBER"`
+	DocumentID    fastbill.ID `json:"DOCUMENT_ID"`
+}
+
+// CancelResponse is the answer of invoice.cancel. InvoiceID is the ID of
+// the cancellation invoice FastBill wrote, not the canceled invoice.
+type CancelResponse struct {
+	Status    string      `json:"STATUS"`
+	InvoiceID fastbill.ID `json:"INVOICE_ID"`
+}
+
+// PartialCancellationRequest is the data of a partial invoice.cancel. All
+// fields are required.
+type PartialCancellationRequest struct {
+	InvoiceID fastbill.ID `json:"INVOICE_ID"`
+	// ItemText is the text of the item on the cancellation invoice.
+	ItemText string `json:"ITEM_TEXT"`
+	// NetAmount is the cancellation amount, net.
+	NetAmount  fastbill.Number `json:"NET_AMOUNT"`
+	VatPercent fastbill.Number `json:"VAT_PERCENT"`
+}
+
+// cancelRequest is the data of invoice.cancel; PartialCancellation is only
+// set for a partial cancellation.
+type cancelRequest struct {
+	InvoiceID           fastbill.ID     `json:"INVOICE_ID"`
+	PartialCancellation fastbill.Flag   `json:"PARTIAL_CANCELLATION,omitempty"`
+	ItemText            string          `json:"ITEM_TEXT,omitempty"`
+	NetAmount           fastbill.Number `json:"NET_AMOUNT,omitempty"`
+	VatPercent          fastbill.Number `json:"VAT_PERCENT,omitempty"`
 }
 
 // SendByEmailRequest is the data of invoice.sendbyemail.

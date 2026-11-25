@@ -1,6 +1,6 @@
 package time
 
-import "github.com/malsch-solutions/fastbill-go-sdk/v2"
+import "github.com/mheers/fastbill-api-golang"
 
 // Filter narrows time.get. Dates are YYYY-MM-DD.
 type Filter struct {

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/internal/fastbilltest"
+	"github.com/mheers/fastbill-api-golang"
+	"github.com/mheers/fastbill-api-golang/internal/fastbilltest"
 )
 
 var ctx = context.Background()
@@ -31,7 +31,7 @@ func TestDoSendsRequestAndDecodesResponse(t *testing.T) {
 		t.Errorf("out = %+v", out)
 	}
 	got := server.Last(t)
-	if got.Service != "customer.create" || got.Header.Get("User-Agent") != "fastbill-go-sdk/v2" {
+	if got.Service != "customer.create" || got.Header.Get("User-Agent") != "fastbill-api-golang" {
 		t.Errorf("request = %+v", got)
 	}
 	fastbilltest.JSONEqual(t, got.Data, `{"ORGANIZATION":"ACME"}`)

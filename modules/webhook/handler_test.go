@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/modules/webhook"
+	"github.com/mheers/fastbill-api-golang/modules/webhook"
 )
 
 // The invoice.created sample from the FastBill docs, shortened: lower-case

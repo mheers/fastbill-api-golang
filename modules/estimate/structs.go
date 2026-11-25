@@ -3,7 +3,7 @@ package estimate
 import (
 	"encoding/json"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
+	"github.com/mheers/fastbill-api-golang"
 )
 
 // States of an estimate (STATE).

@@ -5,7 +5,7 @@ package item
 import (
 	"context"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
+	"github.com/mheers/fastbill-api-golang"
 )
 
 // Client calls the item services.

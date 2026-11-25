@@ -1,6 +1,6 @@
 package article
 
-import "github.com/malsch-solutions/fastbill-go-sdk/v2"
+import "github.com/mheers/fastbill-api-golang"
 
 // Types of articles (TYPE).
 const (

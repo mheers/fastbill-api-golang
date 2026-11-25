@@ -3,11 +3,11 @@ package webhook
 import (
 	"strings"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/modules/contact"
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/modules/customer"
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/modules/estimate"
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/modules/invoice"
+	"github.com/mheers/fastbill-api-golang"
+	"github.com/mheers/fastbill-api-golang/modules/contact"
+	"github.com/mheers/fastbill-api-golang/modules/customer"
+	"github.com/mheers/fastbill-api-golang/modules/estimate"
+	"github.com/mheers/fastbill-api-golang/modules/invoice"
 )
 
 // TypeURL is the endpoint type (TYPE) for an HTTP endpoint, the only one

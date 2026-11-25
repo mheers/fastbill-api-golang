@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/internal/fastbilltest"
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/modules/time"
+	"github.com/mheers/fastbill-api-golang"
+	"github.com/mheers/fastbill-api-golang/internal/fastbilltest"
+	"github.com/mheers/fastbill-api-golang/modules/time"
 )
 
 var ctx = context.Background()

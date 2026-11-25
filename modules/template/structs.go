@@ -1,6 +1,6 @@
 package template
 
-import "github.com/malsch-solutions/fastbill-go-sdk/v2"
+import "github.com/mheers/fastbill-api-golang"
 
 // Template is a template as template.get returns it.
 type Template struct {

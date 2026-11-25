@@ -1,6 +1,6 @@
 package item
 
-import "github.com/malsch-solutions/fastbill-go-sdk/v2"
+import "github.com/mheers/fastbill-api-golang"
 
 // Filter narrows item.get. InvoiceID is required.
 type Filter struct {

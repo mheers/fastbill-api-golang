@@ -24,7 +24,7 @@ const (
 	defaultTimeout  = 60 * time.Second
 	maxResponseSize = 20 << 20
 	maxDocumentSize = 100 << 20
-	userAgent       = "fastbill-go-sdk/v2"
+	userAgent       = "fastbill-api-golang"
 )
 
 // Requester sends requests to the FastBill API. *Client implements it; the

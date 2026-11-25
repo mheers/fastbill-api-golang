@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
+	"github.com/mheers/fastbill-api-golang"
 )
 
 // Received is a request as the fake API saw it.

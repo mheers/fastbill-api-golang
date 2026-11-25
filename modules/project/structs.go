@@ -1,6 +1,6 @@
 package project
 
-import "github.com/malsch-solutions/fastbill-go-sdk/v2"
+import "github.com/mheers/fastbill-api-golang"
 
 // Filter narrows project.get.
 type Filter struct {
