@@ -39,10 +39,12 @@ type Requester interface {
 
 // Client talks to the FastBill API with the account's email and API key.
 type Client struct {
-	baseURL string
-	email   string
-	apiKey  string
-	http    *http.Client
+	baseURL      string
+	email        string
+	apiKey       string
+	userEmail    string
+	userPassword string
+	http         *http.Client
 }
 
 // Option configures a Client.
@@ -53,6 +55,16 @@ func WithHTTPClient(h *http.Client) Option { return func(c *Client) { c.http = h
 
 // WithBaseURL replaces the API endpoint, e.g. for tests.
 func WithBaseURL(u string) Option { return func(c *Client) { c.baseURL = u } }
+
+// WithUserAuth adds the X-Username and X-Password headers that add-on and
+// app providers send to act on behalf of a FastBill user. The client still
+// authenticates as the add-on with its own email and API key.
+func WithUserAuth(email, password string) Option {
+	return func(c *Client) {
+		c.userEmail = email
+		c.userPassword = password
+	}
+}
 
 // NewClient returns a client that authenticates as email with apiKey.
 func NewClient(email, apiKey string, opts ...Option) *Client {
@@ -172,6 +184,10 @@ func (c *Client) send(ctx context.Context, service, traceID string, body io.Read
 		httpReq.Header.Set("x-trace-id", traceID)
 	}
 	httpReq.SetBasicAuth(c.email, c.apiKey)
+	if c.userEmail != "" {
+		httpReq.Header.Set("X-Username", c.userEmail)
+		httpReq.Header.Set("X-Password", c.userPassword)
+	}
 
 	raw, _, err := c.fetch(httpReq, maxResponseSize)
 	if err != nil {

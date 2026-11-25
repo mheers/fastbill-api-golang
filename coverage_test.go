@@ -27,6 +27,29 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
+func TestDoSendsAddOnUserHeaders(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if email, key, ok := r.BasicAuth(); !ok || email != "addon@example.com" || key != "api-key" {
+			t.Errorf("basic auth = %q, %q, %v", email, key, ok)
+		}
+		if got := r.Header.Get("X-Username"); got != "user@example.com" {
+			t.Errorf("X-Username = %q", got)
+		}
+		if got := r.Header.Get("X-Password"); got != "secret" {
+			t.Errorf("X-Password = %q", got)
+		}
+		_, _ = io.WriteString(w, `{"RESPONSE":{"STATUS":"success"}}`)
+	}))
+	defer server.Close()
+	client := fastbill.NewClient("addon@example.com", "api-key",
+		fastbill.WithBaseURL(server.URL),
+		fastbill.WithUserAuth("user@example.com", "secret"),
+	)
+	if err := client.Do(ctx, fastbill.DataRequest("customer.get", nil), nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestErrorStrings(t *testing.T) {
 	apiErr := &fastbill.APIError{Service: "invoice.get", Messages: []string{"one", "two"}}
 	if got, want := apiErr.Error(), "fastbill invoice.get: one; two"; got != want {
