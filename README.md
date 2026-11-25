@@ -11,6 +11,10 @@ times, documents, templates and webhooks.
 The client uses FastBill's JSON format, standard library only, and every call
 takes a `context.Context`.
 
+FastBill v1 is an RPC-style API: one `POST` endpoint takes a `SERVICE` name
+plus `FILTER` or `DATA`. FastBill does not publish an OpenAPI specification
+for it, so the types here are written by hand from the API reference.
+
 This repository is a fork of
 [Malsch-Solutions/fastbill-go-sdk](https://github.com/Malsch-Solutions/fastbill-go-sdk)
 v2 (MIT). It keeps that module layout and adds the current API surface, a
