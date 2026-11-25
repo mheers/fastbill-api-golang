@@ -69,11 +69,12 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdateAndDelete(t *testing.T) {
-	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"STATUS":"success"}` })
+	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"STATUS":"success","ARTICLE_ID":306}` })
 	c := article.NewClient(server.Client())
 
-	if err := c.Update(ctx, &article.Article{ArticleID: "306", UnitPrice: fastbill.NewNumber(59.9)}); err != nil {
-		t.Error(err)
+	res, err := c.Update(ctx, &article.Article{ArticleID: "306", UnitPrice: fastbill.NewNumber(59.9)})
+	if err != nil || res.ArticleID != "306" {
+		t.Errorf("Update = %+v, %v", res, err)
 	}
 	got := server.Last(t)
 	if got.Service != "article.update" {
@@ -105,6 +106,9 @@ func TestErrors(t *testing.T) {
 	}
 	if err := c.Delete(ctx, "306"); !errors.As(err, &apiErr) {
 		t.Errorf("Delete: %v", err)
+	}
+	if _, err := c.Update(ctx, &article.Article{ArticleID: "306"}); !errors.As(err, &apiErr) {
+		t.Errorf("Update with failed status: %v", err)
 	}
 	if _, err := c.Create(ctx, &article.Article{Title: "x"}); !errors.As(err, &apiErr) {
 		t.Errorf("Create with failed status: %v", err)

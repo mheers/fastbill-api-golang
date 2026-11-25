@@ -39,8 +39,12 @@ func (c *Client) Create(ctx context.Context, article *Article) (CreateResponse, 
 
 // Update changes the article with article.ArticleID. Only the fields that
 // are set are sent.
-func (c *Client) Update(ctx context.Context, article *Article) error {
-	return c.status(ctx, "article.update", article)
+func (c *Client) Update(ctx context.Context, article *Article) (UpdateResponse, error) {
+	var res UpdateResponse
+	if err := c.r.Do(ctx, fastbill.DataRequest("article.update", article), &res); err != nil {
+		return res, err
+	}
+	return res, fastbill.StatusResponse{Status: res.Status}.Err("article.update")
 }
 
 // Delete deletes an article.

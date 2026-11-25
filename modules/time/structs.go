@@ -21,6 +21,8 @@ type Time struct {
 	TaskID     fastbill.ID `json:"TASK_ID,omitempty"`
 	CustomerID fastbill.ID `json:"CUSTOMER_ID,omitempty"`
 	ProjectID  fastbill.ID `json:"PROJECT_ID,omitempty"`
+	// ArticleID is the service the time entry is booked on, if any.
+	ArticleID fastbill.ID `json:"ARTICLE_ID,omitempty"`
 	// InvoiceID is the invoice the time was billed with; Get only.
 	InvoiceID fastbill.ID `json:"INVOICE_ID,omitempty"`
 	// Date is YYYY-MM-DD.
@@ -35,8 +37,16 @@ type Time struct {
 
 // CreateResponse is the answer of time.create.
 type CreateResponse struct {
-	Status string      `json:"STATUS"`
-	TimeID fastbill.ID `json:"TIME_ID"`
+	Status  string      `json:"STATUS"`
+	TimeID  fastbill.ID `json:"TIME_ID"`
+	Created string      `json:"CREATED"`
+}
+
+// UpdateResponse is the answer of time.update.
+type UpdateResponse struct {
+	Status  string      `json:"STATUS"`
+	TimeID  fastbill.ID `json:"TIME_ID"`
+	Created string      `json:"CREATED"`
 }
 
 type idRequest struct {

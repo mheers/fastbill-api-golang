@@ -66,11 +66,12 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdateAndDelete(t *testing.T) {
-	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"STATUS":"success"}` })
+	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"STATUS":"success","PROJECT_ID":23}` })
 	c := project.NewClient(server.Client())
 
-	if err := c.Update(ctx, &project.Project{ProjectID: "23", EndDate: "2026-12-31"}); err != nil {
-		t.Error(err)
+	res, err := c.Update(ctx, &project.Project{ProjectID: "23", EndDate: "2026-12-31"})
+	if err != nil || res.ProjectID != "23" {
+		t.Errorf("Update = %+v, %v", res, err)
 	}
 	got := server.Last(t)
 	if got.Service != "project.update" {
@@ -100,7 +101,7 @@ func TestErrors(t *testing.T) {
 	if _, err := c.Get(ctx, fastbill.Page{}, nil); !errors.As(err, &apiErr) || apiErr.Messages[0] != "Project not found" {
 		t.Errorf("Get: %v", err)
 	}
-	if err := c.Update(ctx, &project.Project{ProjectID: "23"}); !errors.As(err, &apiErr) {
+	if _, err := c.Update(ctx, &project.Project{ProjectID: "23"}); !errors.As(err, &apiErr) {
 		t.Errorf("Update: %v", err)
 	}
 	if err := c.Delete(ctx, "23"); !errors.As(err, &apiErr) {

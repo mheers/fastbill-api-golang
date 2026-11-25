@@ -41,6 +41,12 @@ type CreateResponse struct {
 	ArticleID fastbill.ID `json:"ARTICLE_ID"`
 }
 
+// UpdateResponse is the answer of article.update.
+type UpdateResponse struct {
+	Status    string      `json:"STATUS"`
+	ArticleID fastbill.ID `json:"ARTICLE_ID"`
+}
+
 type idRequest struct {
 	ArticleID fastbill.ID `json:"ARTICLE_ID"`
 }

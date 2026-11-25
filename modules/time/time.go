@@ -43,15 +43,15 @@ func (c *Client) Create(ctx context.Context, entry *Time) (CreateResponse, error
 //
 // The docs show time.update answering with TIME_ID and COMMENT but no
 // STATUS, so a missing STATUS counts as success; ERRORS still fail.
-func (c *Client) Update(ctx context.Context, entry *Time) error {
-	var res fastbill.StatusResponse
+func (c *Client) Update(ctx context.Context, entry *Time) (UpdateResponse, error) {
+	var res UpdateResponse
 	if err := c.r.Do(ctx, fastbill.DataRequest("time.update", entry), &res); err != nil {
-		return err
+		return res, err
 	}
 	if res.Status == "" {
-		return nil
+		return res, nil
 	}
-	return res.Err("time.update")
+	return res, fastbill.StatusResponse{Status: res.Status}.Err("time.update")
 }
 
 // Delete deletes a time entry.

@@ -38,8 +38,12 @@ func (c *Client) Create(ctx context.Context, project *Project) (CreateResponse, 
 
 // Update changes the project with project.ProjectID. Only the fields that
 // are set are sent.
-func (c *Client) Update(ctx context.Context, project *Project) error {
-	return c.status(ctx, "project.update", project)
+func (c *Client) Update(ctx context.Context, project *Project) (UpdateResponse, error) {
+	var res UpdateResponse
+	if err := c.r.Do(ctx, fastbill.DataRequest("project.update", project), &res); err != nil {
+		return res, err
+	}
+	return res, fastbill.StatusResponse{Status: res.Status}.Err("project.update")
 }
 
 // Delete deletes a project.
