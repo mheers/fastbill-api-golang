@@ -37,6 +37,18 @@ func TestDoSendsRequestAndDecodesResponse(t *testing.T) {
 	fastbilltest.JSONEqual(t, got.Data, `{"ORGANIZATION":"ACME"}`)
 }
 
+func TestDoSendsTraceID(t *testing.T) {
+	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"STATUS":"success"}` })
+	req := fastbill.DataRequest("customer.get", nil)
+	req.TraceID = "c3a1e2b6-4f09-4c1b-9d3e-5b8a6f2d9f7c"
+	if err := server.Client().Do(ctx, req, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := server.Last(t).Header.Get("x-trace-id"); got != req.TraceID {
+		t.Errorf("x-trace-id = %q, want %q", got, req.TraceID)
+	}
+}
+
 func TestDoReturnsAPIErrors(t *testing.T) {
 	for _, errors_ := range []string{`["Invalid API key"]`, `{"0":"Invalid API key"}`, `"Invalid API key"`} {
 		server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"ERRORS":` + errors_ + `}` })

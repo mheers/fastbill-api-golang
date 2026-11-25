@@ -76,6 +76,9 @@ type Request struct {
 	Offset  int    `json:"OFFSET,omitempty"`
 	Filter  any    `json:"FILTER,omitempty"`
 	Data    any    `json:"DATA,omitempty"`
+	// TraceID is sent as the x-trace-id header when it is not empty, to
+	// help FastBill support trace a request.
+	TraceID string `json:"-"`
 }
 
 // Page selects a slice of a listing. FastBill returns 10 records without a
@@ -126,7 +129,7 @@ func (c *Client) Do(ctx context.Context, req Request, out any) error {
 	if err != nil {
 		return fmt.Errorf("fastbill %s: encode request: %w", req.Service, err)
 	}
-	return c.send(ctx, req.Service, bytes.NewReader(payload), "application/json", out)
+	return c.send(ctx, req.Service, req.TraceID, bytes.NewReader(payload), "application/json", out)
 }
 
 // DoMultipart sends req as the part "httpbody" and the file as the part
@@ -155,16 +158,19 @@ func (c *Client) DoMultipart(ctx context.Context, req Request, file io.Reader, f
 	if err := w.Close(); err != nil {
 		return err
 	}
-	return c.send(ctx, req.Service, &body, w.FormDataContentType(), out)
+	return c.send(ctx, req.Service, req.TraceID, &body, w.FormDataContentType(), out)
 }
 
-func (c *Client) send(ctx context.Context, service string, body io.Reader, contentType string, out any) error {
+func (c *Client) send(ctx context.Context, service, traceID string, body io.Reader, contentType string, out any) error {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL, body)
 	if err != nil {
 		return err
 	}
 	httpReq.Header.Set("Content-Type", contentType)
 	httpReq.Header.Set("User-Agent", userAgent)
+	if traceID != "" {
+		httpReq.Header.Set("x-trace-id", traceID)
+	}
 	httpReq.SetBasicAuth(c.email, c.apiKey)
 
 	raw, _, err := c.fetch(httpReq, maxResponseSize)

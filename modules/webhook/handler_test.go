@@ -88,6 +88,21 @@ func TestParseEventCharset(t *testing.T) {
 	}
 }
 
+func TestParseCancellationEvent(t *testing.T) {
+	event, err := webhook.ParseEvent(newRequest(`{
+		"id": "13", "type": "cancellation.created", "created": "2026-09-30 12:00:00",
+		"invoice": {"invoice_id": "5000", "referenced_invoice_id": "3141"},
+		"customer": {"customer_id": "59"}
+	}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Type != webhook.CancellationCreated || event.Invoice == nil || event.Invoice.InvoiceID != "5000" ||
+		event.Invoice.ReferencedInvoiceID != "3141" || event.Customer == nil || event.Customer.CustomerID != "59" {
+		t.Errorf("event = %+v", event)
+	}
+}
+
 func TestParseEventRejects(t *testing.T) {
 	for name, tc := range map[string]struct {
 		modify func(*http.Request)

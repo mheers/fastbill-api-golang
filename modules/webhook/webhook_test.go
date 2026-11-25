@@ -71,6 +71,13 @@ func TestDelete(t *testing.T) {
 	fastbilltest.JSONEqual(t, got.Data, `{"WEBHOOK_ID":"15"}`)
 }
 
+func TestCancellationEvents(t *testing.T) {
+	got := webhook.JoinEvents(webhook.CancellationCreated, webhook.CancellationCanceled)
+	if got != "cancellation.created,cancellation.canceled" {
+		t.Errorf("JoinEvents = %q", got)
+	}
+}
+
 func TestErrors(t *testing.T) {
 	server := fastbilltest.New(t, func(r fastbilltest.Received) string {
 		switch r.Service {

@@ -30,6 +30,10 @@ const (
 	ContactCreated   EventType = "contact.created"
 	ContactUpdated   EventType = "contact.updated"
 	ContactDeleted   EventType = "contact.deleted"
+	// CancellationCreated and CancellationCanceled carry the cancellation
+	// invoice in Event.Invoice, like the invoice events.
+	CancellationCreated  EventType = "cancellation.created"
+	CancellationCanceled EventType = "cancellation.canceled"
 )
 
 // JoinEvents formats events as the comma-separated EVENTS value.
