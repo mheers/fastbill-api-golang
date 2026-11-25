@@ -15,7 +15,8 @@ var ctx = context.Background()
 // Items as FastBill sends them: IDs and text as strings, amounts as numbers.
 const itemsJSON = `[
 	{"INVOICE_ITEM_ID": "7", "INVOICE_ID": "3141", "CUSTOMER_ID": "59", "ARTICLE_NUMBER": "SUP-1", "DESCRIPTION": "Support",
-	 "QUANTITY": 1.5, "UNIT_PRICE": 823.04, "VAT_PERCENT": 19, "VAT_VALUE": 234.57, "COMPLETE_NET": 1234.56, "COMPLETE_GROSS": 1469.13,
+	 "QUANTITY": 1.5, "UNIT_PRICE": 823.04, "DISCOUNT_BASE_AMOUNT": 900, "DISCOUNT_PERCENT": 10, "DISCOUNT_AMOUNT": 90,
+	 "VAT_PERCENT": 19, "VAT_VALUE": 234.57, "COMPLETE_NET": 1234.56, "COMPLETE_GROSS": 1469.13,
 	 "CURRENCY_CODE": "EUR", "SORT_ORDER": "1"},
 	{"INVOICE_ITEM_ID": 8, "INVOICE_ID": 3141, "DESCRIPTION": "Travel", "QUANTITY": "1", "UNIT_PRICE": "0", "SORT_ORDER": 2}
 ]`
@@ -30,7 +31,8 @@ func TestGet(t *testing.T) {
 		t.Fatalf("items = %+v", items)
 	}
 	if it := items[0]; it.InvoiceItemID != "7" || it.Quantity != "1.5" || it.UnitPrice != "823.04" || it.VatPercent != "19" ||
-		it.CompleteGross != "1469.13" || it.SortOrder != "1" || it.CurrencyCode != "EUR" {
+		it.CompleteGross != "1469.13" || it.SortOrder != "1" || it.CurrencyCode != "EUR" ||
+		it.DiscountBaseAmount != "900" || it.DiscountPercent != "10" || it.DiscountAmount != "90" {
 		t.Errorf("item = %+v", it)
 	}
 	if it := items[1]; it.InvoiceItemID != "8" || it.InvoiceID != "3141" || it.SortOrder != "2" {

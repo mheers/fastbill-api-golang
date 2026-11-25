@@ -35,8 +35,10 @@ type Expense struct {
 	SubTotal           fastbill.Number `json:"SUB_TOTAL"`
 	VatTotal           fastbill.Number `json:"VAT_TOTAL"`
 	Total              fastbill.Number `json:"TOTAL"`
-	Note               string          `json:"NOTE"`
-	Comment            string          `json:"COMMENT"`
+	// VatCase is the VAT case of the expense, e.g. standard.
+	VatCase string `json:"VAT_CASE"`
+	Note    string `json:"NOTE"`
+	Comment string `json:"COMMENT"`
 	// Comments are the comments on the expense (not in the current docs,
 	// kept from v1).
 	Comments         fastbill.List[Comment] `json:"COMMENTS"`

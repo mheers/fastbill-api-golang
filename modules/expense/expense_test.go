@@ -19,6 +19,7 @@ const expenseJSON = `{
 	"INVOICE_ID": "812", "ORGANIZATION": "Hosting GmbH", "INVOICE_NUMBER": "R-2026-0917",
 	"INVOICE_DATE": "2026-09-17", "DUE_DATE": "2026-10-01", "PROJECT_ID": "0", "CUSTOMER_ID": "",
 	"SUB_TOTAL": 1234.56, "VAT_TOTAL": 234.57, "TOTAL": 1469.13, "NOTE": "", "COMMENT": "Server",
+	"VAT_CASE": "standard",
 	"CURRENCY_CODE": "USD", "BASE_CURRENCY_CODE": "EUR", "EXCHANGE_RATE": "1.1712",
 	"CATEGORY": "Hosting", "PAYMENT_INFO": "SEPA", "PAID_DATE": "2026-09-20",
 	"COMMENTS": {},
@@ -38,7 +39,8 @@ func TestGet(t *testing.T) {
 	}
 	e := expenses[0]
 	if e.InvoiceID != "812" || e.Organization != "Hosting GmbH" || e.SubTotal != "1234.56" || e.Total != "1469.13" ||
-		e.ExchangeRate != "1.1712" || e.BaseCurrencyCode != "EUR" || e.PaymentInfo != "SEPA" || e.Comment != "Server" {
+		e.ExchangeRate != "1.1712" || e.BaseCurrencyCode != "EUR" || e.PaymentInfo != "SEPA" || e.Comment != "Server" ||
+		e.VatCase != "standard" {
 		t.Errorf("expense = %+v", e)
 	}
 	if string(e.Category) != `"Hosting"` || len(e.Comments) != 0 || e.VatItems[0].VatValue != "234.57" {

@@ -16,12 +16,18 @@ type Item struct {
 	Description   string          `json:"DESCRIPTION"`
 	Quantity      fastbill.Number `json:"QUANTITY"`
 	UnitPrice     fastbill.Number `json:"UNIT_PRICE"`
-	VatPercent    fastbill.Number `json:"VAT_PERCENT"`
-	VatValue      fastbill.Number `json:"VAT_VALUE"`
-	CompleteNet   fastbill.Number `json:"COMPLETE_NET"`
-	CompleteGross fastbill.Number `json:"COMPLETE_GROSS"`
-	CurrencyCode  string          `json:"CURRENCY_CODE"`
-	SortOrder     fastbill.Number `json:"SORT_ORDER"`
+	// DiscountBaseAmount is the unit price before the item discount;
+	// UnitPrice is the discounted price.
+	DiscountBaseAmount fastbill.Number `json:"DISCOUNT_BASE_AMOUNT"`
+	DiscountPercent    fastbill.Number `json:"DISCOUNT_PERCENT"`
+	// DiscountAmount is the discount per unit.
+	DiscountAmount fastbill.Number `json:"DISCOUNT_AMOUNT"`
+	VatPercent     fastbill.Number `json:"VAT_PERCENT"`
+	VatValue       fastbill.Number `json:"VAT_VALUE"`
+	CompleteNet    fastbill.Number `json:"COMPLETE_NET"`
+	CompleteGross  fastbill.Number `json:"COMPLETE_GROSS"`
+	CurrencyCode   string          `json:"CURRENCY_CODE"`
+	SortOrder      fastbill.Number `json:"SORT_ORDER"`
 }
 
 type idRequest struct {

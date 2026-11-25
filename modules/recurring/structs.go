@@ -28,6 +28,7 @@ type Filter struct {
 type Recurring struct {
 	InvoiceID            fastbill.ID `json:"INVOICE_ID"`
 	Type                 string      `json:"TYPE"`
+	Subtype              string      `json:"SUBTYPE"`
 	CustomerID           fastbill.ID `json:"CUSTOMER_ID"`
 	CustomerNumber       string      `json:"CUSTOMER_NUMBER"`
 	CustomerCostCenterID fastbill.ID `json:"CUSTOMER_COSTCENTER_ID"`
@@ -48,6 +49,10 @@ type Recurring struct {
 	InvoiceTitle        string                 `json:"INVOICE_TITLE"`
 	CashDiscountPercent fastbill.Number        `json:"CASH_DISCOUNT_PERCENT"`
 	CashDiscountDays    fastbill.Number        `json:"CASH_DISCOUNT_DAYS"`
+	DiscountBaseAmount  fastbill.Number        `json:"DISCOUNT_BASE_AMOUNT"`
+	DiscountPercent     fastbill.Number        `json:"DISCOUNT_PERCENT"`
+	DiscountAmount      fastbill.Number        `json:"DISCOUNT_AMOUNT"`
+	DiscountTotal       fastbill.Number        `json:"DISCOUNT_TOTAL"`
 	SubTotal            fastbill.Number        `json:"SUB_TOTAL"`
 	VatTotal            fastbill.Number        `json:"VAT_TOTAL"`
 	VatCase             string                 `json:"VAT_CASE"`
@@ -84,6 +89,22 @@ type Recurring struct {
 	// OutputType is draft or outgoing.
 	OutputType string `json:"OUTPUT_TYPE"`
 	IntroText  string `json:"INTROTEXT"`
+	// CustomerAccountingNote, ContractReference, CustomerOrderReference
+	// and OrderReference are free references for accounting.
+	CustomerAccountingNote string                 `json:"CUSTOMER_ACCOUNTING_NOTE"`
+	ContractReference      string                 `json:"CONTRACT_REFERENCE"`
+	CustomerOrderReference string                 `json:"CUSTOMER_ORDER_REFERENCE"`
+	OrderReference         string                 `json:"ORDER_REFERENCE"`
+	PreviousInvoiceID      fastbill.ID            `json:"PREVIOUS_INVOICE_ID"`
+	NextInvoiceID          fastbill.ID            `json:"NEXT_INVOICE_ID"`
+	Comments               fastbill.List[Comment] `json:"COMMENTS"`
+}
+
+// Comment is a comment on a recurring invoice.
+type Comment struct {
+	Date          string        `json:"DATE"`
+	Comment       string        `json:"COMMENT"`
+	CommentPublic fastbill.Flag `json:"COMMENT_PUBLIC"`
 }
 
 // Item is a line of a recurring invoice.
@@ -93,10 +114,15 @@ type Item struct {
 	Description   string          `json:"DESCRIPTION,omitempty"`
 	Quantity      fastbill.Number `json:"QUANTITY,omitempty"`
 	UnitPrice     fastbill.Number `json:"UNIT_PRICE,omitempty"`
-	VatPercent    fastbill.Number `json:"VAT_PERCENT,omitempty"`
-	VatValue      fastbill.Number `json:"VAT_VALUE,omitempty"`
-	CompleteNet   fastbill.Number `json:"COMPLETE_NET,omitempty"`
-	CompleteGross fastbill.Number `json:"COMPLETE_GROSS,omitempty"`
+	// DiscountBaseAmount is the unit price before the item discount.
+	DiscountBaseAmount fastbill.Number `json:"DISCOUNT_BASE_AMOUNT,omitempty"`
+	DiscountPercent    fastbill.Number `json:"DISCOUNT_PERCENT,omitempty"`
+	// DiscountAmount is the discount per unit.
+	DiscountAmount fastbill.Number `json:"DISCOUNT_AMOUNT,omitempty"`
+	VatPercent     fastbill.Number `json:"VAT_PERCENT,omitempty"`
+	VatValue       fastbill.Number `json:"VAT_VALUE,omitempty"`
+	CompleteNet    fastbill.Number `json:"COMPLETE_NET,omitempty"`
+	CompleteGross  fastbill.Number `json:"COMPLETE_GROSS,omitempty"`
 	// Category is kept as sent: FastBill does not document its shape.
 	Category  json.RawMessage `json:"CATEGORY,omitempty"`
 	SortOrder fastbill.Number `json:"SORT_ORDER,omitempty"`
@@ -135,6 +161,11 @@ type Request struct {
 	DeliveryDate        string          `json:"DELIVERY_DATE,omitempty"`
 	CashDiscountPercent fastbill.Number `json:"CASH_DISCOUNT_PERCENT,omitempty"`
 	CashDiscountDays    fastbill.Number `json:"CASH_DISCOUNT_DAYS,omitempty"`
+	// DiscountPercent is the document discount (0–100).
+	DiscountPercent fastbill.Number `json:"DISCOUNT_PERCENT,omitempty"`
+	// DiscountAmount is the document discount as an amount, always net.
+	DiscountAmount fastbill.Number `json:"DISCOUNT_AMOUNT,omitempty"`
+	IsGross        fastbill.Flag   `json:"IS_GROSS,omitempty"`
 	// VatCase is e.g. standard or small_business_regulation.
 	VatCase string `json:"VAT_CASE,omitempty"`
 	Items   []Item `json:"ITEMS,omitempty"`
@@ -142,8 +173,18 @@ type Request struct {
 
 // CreateResponse is the answer of recurring.create.
 type CreateResponse struct {
-	Status    string      `json:"STATUS"`
-	InvoiceID fastbill.ID `json:"INVOICE_ID"`
+	Status        string      `json:"STATUS"`
+	InvoiceID     fastbill.ID `json:"INVOICE_ID"`
+	DocumentID    fastbill.ID `json:"DOCUMENT_ID"`
+	InvoiceNumber string      `json:"INVOICE_NUMBER"`
+}
+
+// UpdateResponse is the answer of recurring.update.
+type UpdateResponse struct {
+	Status        string      `json:"STATUS"`
+	InvoiceID     fastbill.ID `json:"INVOICE_ID"`
+	DocumentID    fastbill.ID `json:"DOCUMENT_ID"`
+	InvoiceNumber string      `json:"INVOICE_NUMBER"`
 }
 
 type idRequest struct {

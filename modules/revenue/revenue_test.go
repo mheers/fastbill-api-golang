@@ -16,10 +16,12 @@ var ctx = context.Background()
 // A revenue as FastBill sends it: IDs and text as strings, amounts as
 // numbers, an empty list as {}.
 const revenueJSON = `{
-	"INVOICE_ID": "4501", "TYPE": "outgoing", "CUSTOMER_ID": "59", "CUSTOMER_NUMBER": "1042",
+	"INVOICE_ID": "4501", "TYPE": "outgoing", "SUBTYPE": "standard", "CUSTOMER_ID": "59", "CUSTOMER_NUMBER": "1042",
 	"PROJECT_ID": "7", "CURRENCY_CODE": "EUR", "BASE_CURRENCY_CODE": "EUR", "EXCHANGE_RATE": 1,
 	"INVOICE_NUMBER": "E-17", "INVOICE_DATE": "2026-09-02", "DUE_DATE": "2026-09-16", "PAID_DATE": "2026-09-10",
-	"IS_CANCELED": 0, "PAYMENT_TYPE": "1", "CASH_DISCOUNT_DAYS": "0",
+	"IS_CANCELED": 0, "IS_GROSS": "0", "PAYMENT_TYPE": "1", "CASH_DISCOUNT_DAYS": "0",
+	"CUSTOMER_ACCOUNTING_NOTE": "K-1", "CONTRACT_REFERENCE": "V-9", "CUSTOMER_ORDER_REFERENCE": "B-4", "ORDER_REFERENCE": "A-7",
+	"PREVIOUS_INVOICE_ID": "4500", "NEXT_INVOICE_ID": "4502",
 	"SUB_TOTAL": 1234.56, "VAT_TOTAL": 234.57, "TOTAL": 1469.13, "ORGANIZATION": "Kunde AG",
 	"VAT_ITEMS": [{"VAT_PERCENT": 19, "COMPLETE_NET": 1234.56, "VAT_VALUE": 234.57}],
 	"ITEMS": [{"INVOICE_ITEM_ID": "33", "DESCRIPTION": "Beratung", "QUANTITY": 2.5, "UNIT_PRICE": 493.824, "VAT_PERCENT": 19, "CURRENCY_CODE": "EUR"}],
@@ -30,7 +32,7 @@ const revenueJSON = `{
 
 func TestGet(t *testing.T) {
 	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"REVENUES":[` + revenueJSON + `]}` })
-	revenues, err := revenue.NewClient(server.Client()).Get(ctx, fastbill.Page{Limit: 100}, &revenue.Filter{CustomerID: "59", StartPaidDate: "2026-09-01"})
+	revenues, err := revenue.NewClient(server.Client()).Get(ctx, fastbill.Page{Limit: 100}, &revenue.Filter{CustomerID: "59", StartPaidDate: "2026-09-01", State: "paid"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,6 +44,10 @@ func TestGet(t *testing.T) {
 		r.IsCanceled != fastbill.No || r.PaymentType != "1" || r.InvoiceNumber != "E-17" {
 		t.Errorf("revenue = %+v", r)
 	}
+	if r.Subtype != "standard" || r.IsGross.Bool() || r.CustomerAccountingNote != "K-1" || r.ContractReference != "V-9" ||
+		r.CustomerOrderReference != "B-4" || r.OrderReference != "A-7" || r.PreviousInvoiceID != "4500" || r.NextInvoiceID != "4502" {
+		t.Errorf("current fields = %+v", r)
+	}
 	if item := r.Items[0]; item.InvoiceItemID != "33" || item.Quantity != "2.5" || item.UnitPrice != "493.824" {
 		t.Errorf("item = %+v", item)
 	}
@@ -52,7 +58,7 @@ func TestGet(t *testing.T) {
 	if got.Service != "revenue.get" || got.Limit != 100 {
 		t.Errorf("request = %+v", got)
 	}
-	fastbilltest.JSONEqual(t, got.Filter, `{"CUSTOMER_ID":"59","START_PAID_DATE":"2026-09-01"}`)
+	fastbilltest.JSONEqual(t, got.Filter, `{"CUSTOMER_ID":"59","START_PAID_DATE":"2026-09-01","STATE":"paid"}`)
 }
 
 func TestCreate(t *testing.T) {
@@ -60,6 +66,7 @@ func TestCreate(t *testing.T) {
 	res, err := revenue.NewClient(server.Client()).Create(ctx, &revenue.Request{
 		InvoiceDate: "2026-09-02",
 		CustomerID:  "59",
+		ProjectID:   "7",
 		SubTotal:    fastbill.NewNumber(1234.56),
 		VatTotal:    fastbill.NewNumber(234.57),
 	}, strings.NewReader("receipt"), "beleg.pdf")
@@ -70,7 +77,7 @@ func TestCreate(t *testing.T) {
 	if got.Service != "revenue.create" || got.FileName != "beleg.pdf" || got.File != "receipt" {
 		t.Errorf("request = %+v", got)
 	}
-	fastbilltest.JSONEqual(t, got.Data, `{"INVOICE_DATE":"2026-09-02","CUSTOMER_ID":"59","SUB_TOTAL":1234.56,"VAT_TOTAL":234.57}`)
+	fastbilltest.JSONEqual(t, got.Data, `{"INVOICE_DATE":"2026-09-02","CUSTOMER_ID":"59","PROJECT_ID":"7","SUB_TOTAL":1234.56,"VAT_TOTAL":234.57}`)
 }
 
 func TestSetPaidAndDelete(t *testing.T) {

@@ -24,7 +24,10 @@ type Filter struct {
 	// Type is outgoing, draft or credit.
 	Type string `json:"TYPE,omitempty"`
 	// Subtype is standard, progress_invoice or final_invoice.
-	Subtype string        `json:"SUBTYPE,omitempty"`
+	Subtype string `json:"SUBTYPE,omitempty"`
+	// State is unpaid, overdue, paid, canceled or, for credit notes,
+	// issued.
+	State   string        `json:"STATE,omitempty"`
 	IsGross fastbill.Flag `json:"IS_GROSS,omitempty"`
 	// Deprecated: FastBill deprecated MONTH and YEAR; use StartDate and
 	// EndDate.
@@ -37,6 +40,7 @@ type Filter struct {
 type Revenue struct {
 	InvoiceID            fastbill.ID `json:"INVOICE_ID"`
 	Type                 string      `json:"TYPE"`
+	Subtype              string      `json:"SUBTYPE"`
 	CustomerID           fastbill.ID `json:"CUSTOMER_ID"`
 	CustomerNumber       string      `json:"CUSTOMER_NUMBER"`
 	CustomerCostCenterID fastbill.ID `json:"CUSTOMER_COSTCENTER_ID"`
@@ -91,6 +95,15 @@ type Revenue struct {
 	LastUpdate        string                 `json:"LASTUPDATE"`
 	DocumentURL       string                 `json:"DOCUMENT_URL"`
 	Comments          fastbill.List[Comment] `json:"COMMENTS"`
+	IsGross           fastbill.Flag          `json:"IS_GROSS"`
+	// CustomerAccountingNote, ContractReference, CustomerOrderReference
+	// and OrderReference are free references for accounting.
+	CustomerAccountingNote string      `json:"CUSTOMER_ACCOUNTING_NOTE"`
+	ContractReference      string      `json:"CONTRACT_REFERENCE"`
+	CustomerOrderReference string      `json:"CUSTOMER_ORDER_REFERENCE"`
+	OrderReference         string      `json:"ORDER_REFERENCE"`
+	PreviousInvoiceID      fastbill.ID `json:"PREVIOUS_INVOICE_ID"`
+	NextInvoiceID          fastbill.ID `json:"NEXT_INVOICE_ID"`
 }
 
 // Comment is a comment on a revenue.
@@ -140,6 +153,7 @@ type Request struct {
 	InvoiceDate   string          `json:"INVOICE_DATE,omitempty"`
 	DueDate       string          `json:"DUE_DATE,omitempty"`
 	CustomerID    fastbill.ID     `json:"CUSTOMER_ID,omitempty"`
+	ProjectID     fastbill.ID     `json:"PROJECT_ID,omitempty"`
 	InvoiceNumber string          `json:"INVOICE_NUMBER,omitempty"`
 	Comment       string          `json:"COMMENT,omitempty"`
 	SubTotal      fastbill.Number `json:"SUB_TOTAL,omitempty"`

@@ -37,8 +37,12 @@ func (c *Client) Create(ctx context.Context, req *Request) (CreateResponse, erro
 }
 
 // Update changes a recurring invoice; req.InvoiceID is required.
-func (c *Client) Update(ctx context.Context, req *Request) error {
-	return c.status(ctx, "recurring.update", req)
+func (c *Client) Update(ctx context.Context, req *Request) (UpdateResponse, error) {
+	var res UpdateResponse
+	if err := c.r.Do(ctx, fastbill.DataRequest("recurring.update", req), &res); err != nil {
+		return res, err
+	}
+	return res, fastbill.StatusResponse{Status: res.Status}.Err("recurring.update")
 }
 
 // Delete deletes a recurring invoice.
