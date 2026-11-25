@@ -1,26 +1,34 @@
-# fastbill-go-sdk
+# fastbill-api-golang
 
-[![Checks](https://github.com/Malsch-Solutions/fastbill-go-sdk/actions/workflows/check.yml/badge.svg)](https://github.com/Malsch-Solutions/fastbill-go-sdk/actions/workflows/check.yml)
-[![CodeQL](https://github.com/Malsch-Solutions/fastbill-go-sdk/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/Malsch-Solutions/fastbill-go-sdk/actions/workflows/codeql-analysis.yml)
-[![codecov](https://codecov.io/gh/Malsch-Solutions/fastbill-go-sdk/branch/main/graph/badge.svg?token=NYMO09X0BU)](https://codecov.io/gh/Malsch-Solutions/fastbill-go-sdk)
-[![Go Reference](https://pkg.go.dev/badge/github.com/malsch-solutions/fastbill-go-sdk/v2.svg)](https://pkg.go.dev/github.com/malsch-solutions/fastbill-go-sdk/v2)
+[![CI](https://github.com/mheers/fastbill-api-golang/actions/workflows/ci.yml/badge.svg)](https://github.com/mheers/fastbill-api-golang/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/mheers/fastbill-api-golang.svg)](https://pkg.go.dev/github.com/mheers/fastbill-api-golang)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Go client for the [FastBill API](https://apidocs.fastbill.com/fastbill/en/): customers, invoices, expenses, revenues and everything else the API offers. No dependencies outside the standard library.
+Go client for the [FastBill API](https://apidocs.fastbill.com/fastbill/en/fundamentals.html):
+customers, invoices, estimates, expenses, revenues, products, projects, work
+times, documents, templates and webhooks.
+
+The client uses FastBill's JSON format, standard library only, and every call
+takes a `context.Context`.
+
+This repository is a fork of
+[Malsch-Solutions/fastbill-go-sdk](https://github.com/Malsch-Solutions/fastbill-go-sdk)
+v2 (MIT). It keeps that module layout and adds the current API surface, a
+coverage gate and the fixes listed in [Changes from upstream](#changes-from-upstream).
+See [NOTICE](NOTICE) for the attribution.
 
 ## Installation
 
 Requires Go 1.25 or newer.
 
 ```bash
-go get github.com/malsch-solutions/fastbill-go-sdk/v2
+go get github.com/mheers/fastbill-api-golang
 ```
 
-The import path ends in `/v2`; the package is called `fastbill`.
+## Quick start
 
-## Usage
-
-The client authenticates with the email address of your FastBill user and the API key from your FastBill account settings.
+The client authenticates with the email address of your FastBill user and the
+API key from your FastBill account settings.
 
 ```go
 package main
@@ -31,8 +39,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/malsch-solutions/fastbill-go-sdk/v2"
-	"github.com/malsch-solutions/fastbill-go-sdk/v2/modules/invoice"
+	"github.com/mheers/fastbill-api-golang"
+	"github.com/mheers/fastbill-api-golang/modules/invoice"
 )
 
 func main() {
@@ -50,94 +58,194 @@ func main() {
 }
 ```
 
-More in [`examples/`](examples).
+Every service has a typed client under `modules/`; `fastbill.NewClient`
+returns the shared transport.
 
-Every call takes a `context.Context`. The client has a 60-second timeout. Pass `fastbill.WithHTTPClient` to change it.
-
-**All pages.** FastBill returns at most 100 records per call. `fastbill.All` pages through a listing:
+## Authentication
 
 ```go
-all, err := fastbill.All(ctx, fastbill.MaxLimit, func(ctx context.Context, p fastbill.Page) ([]invoice.Invoice, error) {
-	return invoices.Get(ctx, p, nil)
+// Own account.
+client := fastbill.NewClient(email, apiKey)
+
+// Add-on or app acting for a user: authenticate as the add-on and send the
+// user's credentials in X-Username/X-Password.
+client = fastbill.NewClient(addonEmail, addonKey,
+	fastbill.WithUserAuth(userEmail, userPassword))
+```
+
+FastBill's API is stateless: every request carries the credentials.
+
+An optional trace ID helps FastBill support follow a request:
+
+```go
+req := fastbill.DataRequest("invoice.get", nil)
+req.TraceID = "c3a1e2b6-4f09-4c1b-9d3e-5b8a6f2d9f7c"
+err := client.Do(ctx, req, &out)
+```
+
+## Services
+
+| Package | Services |
+|---|---|
+| `modules/article` | `article.get/create/update/delete` |
+| `modules/contact` | `contact.get/create/update/delete` |
+| `modules/customer` | `customer.get/create/update/delete` |
+| `modules/document` | `document.get/create` (upload) |
+| `modules/estimate` | `estimate.get/create/update/delete/sendbyemail/createinvoice` |
+| `modules/expense` | `expense.get/create` (optional receipt upload) |
+| `modules/invoice` | `invoice.get/create/update/delete/complete/cancel/lock/sendbyemail/sendbypost/setpaid` |
+| `modules/item` | `item.get/delete` |
+| `modules/project` | `project.get/create/update/delete` |
+| `modules/recurring` | `recurring.get/create/update/delete` |
+| `modules/revenue` | `revenue.get/create/setpaid/delete` |
+| `modules/template` | `template.get` |
+| `modules/time` | `time.get/create/update/delete` |
+| `modules/webhook` | `webhook.get/create/delete`, notification parsing |
+
+## Common patterns
+
+### Paging through a listing
+
+FastBill returns at most 100 records per call and 10 without a limit.
+`fastbill.All` walks the offsets:
+
+```go
+all, err := fastbill.All(ctx, fastbill.MaxLimit, func(ctx context.Context, page fastbill.Page) ([]invoice.Invoice, error) {
+	return invoices.Get(ctx, page, &invoice.Filter{Type: invoice.TypeOutgoing})
 })
 ```
 
-**Raw records.** `fastbill.Records` returns each record as FastBill sent it, with every field, e.g. to archive it:
+### Raw records
+
+`fastbill.Records` returns each record exactly as FastBill sent it, including
+fields the typed structs do not have:
 
 ```go
 records, err := fastbill.Records(ctx, client, "invoice.get", "INVOICES", nil, fastbill.Page{Limit: 100})
 ```
 
-**Documents.** `client.Download(ctx, inv.DocumentURL)` fetches an invoice PDF or a receipt file.
+### Errors
 
-**Errors.** FastBill's `ERRORS` come back as `*fastbill.APIError`, and HTTP failures as `*fastbill.StatusError`. Services that only report a status return an error unless the status is `success`.
+FastBill reports business errors in `RESPONSE.ERRORS`, often with HTTP 200.
+Those become `*fastbill.APIError`; non-2xx answers become
+`*fastbill.StatusError`.
 
-**Rate limits.** FastBill limits API calls per hour by plan. The client does not throttle, so space large jobs out yourself.
+```go
+var apiErr *fastbill.APIError
+if errors.As(err, &apiErr) {
+	log.Printf("FastBill %s: %v", apiErr.Service, apiErr.Messages)
+}
+```
+
+Services that only report a status return an error unless `STATUS` is
+`success`.
+
+### Invoice lifecycle
+
+```go
+created, err := invoices.Create(ctx, &invoice.Request{
+	CustomerID: "59",
+	Items: []invoice.Item{{
+		Description: "Support", Quantity: fastbill.NewInt(2), UnitPrice: fastbill.NewNumber(80), VatPercent: fastbill.NewInt(19),
+	}},
+})
+
+completed, err := invoices.Complete(ctx, created.InvoiceID) // assigns the invoice number
+err = invoices.SendByEmail(ctx, &invoice.SendByEmailRequest{
+	InvoiceID: created.InvoiceID,
+	Recipient: invoice.Recipient{To: "customer@example.com"},
+})
+
+// Full cancellation; CancelPartial sends PARTIAL_CANCELLATION with an amount.
+cancellation, err := invoices.Cancel(ctx, created.InvoiceID)
+fmt.Println(cancellation.InvoiceID) // the cancellation invoice
+```
+
+### Documents
+
+`Download` fetches a `DOCUMENT_URL` (invoice PDF or receipt). The URL carries
+its own token, so no credentials are sent:
+
+```go
+body, contentType, err := client.Download(ctx, inv.DocumentURL)
+```
+
+### Webhooks
+
+`webhook.ParseEvent` validates and decodes a FastBill notification. Answer
+with `400 Bad Request` when it returns an error:
+
+```go
+http.HandleFunc("/fastbill/webhook", func(w http.ResponseWriter, r *http.Request) {
+	event, err := webhook.ParseEvent(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	switch event.Type {
+	case webhook.InvoiceCreated:
+		log.Printf("invoice %s", event.Invoice.InvoiceID)
+	}
+	w.WriteHeader(http.StatusNoContent)
+})
+```
+
+FastBill documents no signature for notifications. Use an unguessable
+endpoint URL and treat the payload as untrusted input.
 
 ### Types
 
-FastBill sends the same field as a JSON string in one response and as a number in another. The structs use:
+FastBill sends the same field as a JSON string in one response and as a
+number in another. The structs use:
 
 | Type | For | Accepts |
 |---|---|---|
 | `fastbill.ID` | `*_ID` fields | string, number |
-| `fastbill.Number` | amounts, quantities, percentages | number, numeric string; keeps the digits as sent, so money is never rounded through `float64`. `Float64()` parses it; `NewNumber`/`NewInt` create one |
+| `fastbill.Number` | amounts, quantities, percentages | number, numeric string; keeps the digits as sent, so money is never rounded through `float64`. `Float64()` parses it |
 | `fastbill.Flag` | 0/1 fields (`IS_CANCELED`, …) | `"1"`/`"0"`, `1`/`0`, `true`/`false`; `Bool()` reads it |
 | `fastbill.List[T]` | lists in responses | array, PHP object keyed by index, `{}` or `null` when empty |
 
-Dates are strings in FastBill's format (`YYYY-MM-DD`).
+Dates are strings in FastBill's format (`YYYY-MM-DD`; timestamps
+`YYYY-MM-DD hh:mm:ss`).
 
-## API coverage
+## Rate limits
 
-| Module | Services |
-|---|---|
-| `article` | Products |
-| `contact` | Contacts |
-| `customer` | Customers |
-| `document` | Documents (inbox) |
-| `estimate` | Estimates |
-| `expense` | Expenses (receipts) |
-| `invoice` | Invoices, drafts, credit notes |
-| `item` | Invoice items |
-| `project` | Projects |
-| `recurring` | Recurring invoices |
-| `revenue` | Revenues |
-| `template` | Templates |
-| `time` | Work times |
-| `webhook` | Webhooks, and `webhook.ParseEvent` for incoming calls |
+FastBill limits calls per hour by plan: Solo 50, Solo-Plus 100, Pro 500,
+Premium 1000. Webhooks are available in Pro and Premium. The client does not
+throttle; space large jobs out yourself.
 
-## Versions
+## Changes from upstream
 
-| Version | Module path | Status |
-|---|---|---|
-| v2 | `github.com/malsch-solutions/fastbill-go-sdk/v2` | current |
-| v1 | `github.com/malsch-solutions/fastbill-go-sdk` | no further changes; stays available for existing users |
+- `estimate.update` and the documented estimate state values.
+- `estimate.State*` constants use the response words (`accepted`, …); the
+  letter codes accepted by `estimate.update` are `estimate.StateCode*`.
+- Document and item discounts, `DISCOUNT_TOTAL`, `IS_GROSS`, referenced
+  invoices and comments on invoices, estimates and recurring invoices.
+- `invoice.CancelPartial` for `PARTIAL_CANCELLATION`, and the cancellation
+  invoice ID from `invoice.Cancel`.
+- Response IDs from `invoice.update`, `recurring.update`, `contact.update`
+  (`ADDITIONAL_INFO`) and the other update actions.
+- `CC`/`BCC`, `ARTICLE_ID` on time entries, `VAT_CASE` on expenses,
+  accounting references and invoice-chain IDs.
+- Add-on authentication (`WithUserAuth`) and request trace IDs.
+- `cancellation.created`/`cancellation.canceled` webhook events.
+- A 90% per-package coverage gate and tests for every service.
 
-The project follows [semantic versioning](https://semver.org). Releases are listed on the [releases page](https://github.com/Malsch-Solutions/fastbill-go-sdk/releases).
-
-## Upgrading from v1
-
-v2 is a new module path, `github.com/malsch-solutions/fastbill-go-sdk/v2`. v1 keeps working where it is pinned.
-
-- `service.NewService(email, key)` → `fastbill.NewClient(email, key, opts...)`. `request`, `response`, `parameter` and `service` are gone. Use `fastbill.Request`, `fastbill.Page` and `fastbill.Requester`.
-- `invoice.NewInvoiceClient(s)` → `invoice.NewClient(c)`, and the same for every module.
-- Every method takes `ctx` first. `Get(&parameter.Parameter{Limit, Offset}, filter)` → `Get(ctx, fastbill.Page{Limit, Offset}, filter)`.
-- Methods that returned `(bool, error)` (Delete, Cancel, SendByEmail, …) return `error`.
-- Fields are typed as in the table above. v1's `int` amounts and quantities (e.g. expense `SUB_TOTAL`, item `QUANTITY`) cut decimals off. They are `fastbill.Number` now.
-- Filter dates are `YYYY-MM-DD` strings. v1 sent `time.Time` as RFC 3339, which FastBill does not understand.
-- Webhooks: `NewWebhookRequestHandler(req).ValidateAndGetData()` → `webhook.ParseEvent(r)`.
-- Fields from FastBill's current docs were added, e.g. invoice `SUBTYPE`, `STATE`, `PAYMENTS` and `DETAILS_URL`.
-
-## Contributing
-
-Issues and pull requests are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Before opening a pull request, run:
+## Development
 
 ```bash
-gofmt -l . && go vet ./... && go test -race ./...
+make test     # go test ./...
+make race     # go test -race ./...
+make cover    # coverage gate: 90% per library package
+make check    # gofmt, vet, tests and the coverage gate
 ```
 
-Tests run against a fake API (`internal/fastbilltest`); they never call FastBill.
+`examples/` and the `internal/fastbilltest` helper are excluded from the
+coverage gate.
 
 ## License
 
-[MIT](LICENSE)
+MIT. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+Original work Copyright (c) 2021 Dominik Malsch Solutions.
+Fork changes Copyright (c) 2026 Marcel Heers.

@@ -1,0 +1,15 @@
+fastbill-api-golang
+Copyright (c) 2026 Marcel Heers <marcel@heers.it>
+
+This product is a fork of fastbill-go-sdk v2:
+
+    https://github.com/Malsch-Solutions/fastbill-go-sdk
+    Copyright (c) 2021 Dominik Malsch Solutions
+    MIT License
+
+Upstream baseline: commit fc9213d001c0009979048ee35dd6aa0bfd4497db
+(2026-09-30).
+
+The upstream copyright notice and the MIT license text are retained in
+LICENSE. Changes in this fork are described in CHANGELOG.md and the
+"Changes from upstream" section of README.md.
