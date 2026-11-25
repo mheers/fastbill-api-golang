@@ -36,6 +36,16 @@ func (c *Client) Create(ctx context.Context, req *Request) (CreateResponse, erro
 	return res, fastbill.StatusResponse{Status: res.Status}.Err("estimate.create")
 }
 
+// Update changes an estimate. If only State is set, only the status
+// changes and no new PDF is created.
+func (c *Client) Update(ctx context.Context, req *UpdateRequest) (UpdateResponse, error) {
+	var res UpdateResponse
+	if err := c.r.Do(ctx, fastbill.DataRequest("estimate.update", req), &res); err != nil {
+		return res, err
+	}
+	return res, fastbill.StatusResponse{Status: res.Status}.Err("estimate.update")
+}
+
 // Delete deletes an estimate.
 func (c *Client) Delete(ctx context.Context, estimateID fastbill.ID) error {
 	return c.status(ctx, "estimate.delete", idRequest{EstimateID: estimateID})

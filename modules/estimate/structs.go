@@ -6,14 +6,24 @@ import (
 	"github.com/mheers/fastbill-api-golang"
 )
 
-// States of an estimate (STATE).
+// States of an estimate (STATE) as estimate.get returns them.
 const (
-	StateCreated     = "a"
-	StateSent        = "b"
-	StateNegotiation = "c"
-	StateAccepted    = "d"
-	StateRejected    = "e"
-	StateInvoiced    = "f"
+	StateCreated     = "created"
+	StateSent        = "sent"
+	StateNegotiation = "negotiation"
+	StateAccepted    = "accepted"
+	StateRejected    = "rejected"
+	StateInvoiced    = "invoiced"
+)
+
+// Letter codes estimate.update also accepts for STATE.
+const (
+	StateCodeCreated     = "a"
+	StateCodeSent        = "b"
+	StateCodeNegotiation = "c"
+	StateCodeAccepted    = "d"
+	StateCodeRejected    = "e"
+	StateCodeInvoiced    = "f"
 )
 
 // Filter narrows estimate.get. Dates are YYYY-MM-DD.
@@ -58,18 +68,23 @@ type Estimate struct {
 	BaseCurrencyCode  string          `json:"BASE_CURRENCY_CODE"`
 	// ExchangeRate converts to BaseCurrencyCode: base amount = amount ÷
 	// ExchangeRate. It is 1 if both currencies are the same.
-	ExchangeRate   fastbill.Number        `json:"EXCHANGE_RATE"`
-	TemplateID     fastbill.ID            `json:"TEMPLATE_ID"`
-	EstimateNumber string                 `json:"ESTIMATE_NUMBER"`
-	IntroText      string                 `json:"INTROTEXT"`
-	EstimateDate   string                 `json:"ESTIMATE_DATE"`
-	DueDate        string                 `json:"DUE_DATE"`
-	SubTotal       fastbill.Number        `json:"SUB_TOTAL"`
-	VatTotal       fastbill.Number        `json:"VAT_TOTAL"`
-	VatItems       fastbill.List[VatItem] `json:"VAT_ITEMS"`
-	Items          fastbill.List[Item]    `json:"ITEMS"`
-	Total          fastbill.Number        `json:"TOTAL"`
-	DocumentURL    string                 `json:"DOCUMENT_URL"`
+	ExchangeRate       fastbill.Number        `json:"EXCHANGE_RATE"`
+	TemplateID         fastbill.ID            `json:"TEMPLATE_ID"`
+	EstimateNumber     string                 `json:"ESTIMATE_NUMBER"`
+	IntroText          string                 `json:"INTROTEXT"`
+	EstimateDate       string                 `json:"ESTIMATE_DATE"`
+	DueDate            string                 `json:"DUE_DATE"`
+	DiscountBaseAmount fastbill.Number        `json:"DISCOUNT_BASE_AMOUNT"`
+	DiscountPercent    fastbill.Number        `json:"DISCOUNT_PERCENT"`
+	DiscountAmount     fastbill.Number        `json:"DISCOUNT_AMOUNT"`
+	DiscountTotal      fastbill.Number        `json:"DISCOUNT_TOTAL"`
+	SubTotal           fastbill.Number        `json:"SUB_TOTAL"`
+	VatTotal           fastbill.Number        `json:"VAT_TOTAL"`
+	VatItems           fastbill.List[VatItem] `json:"VAT_ITEMS"`
+	Items              fastbill.List[Item]    `json:"ITEMS"`
+	Total              fastbill.Number        `json:"TOTAL"`
+	IsGross            fastbill.Flag          `json:"IS_GROSS"`
+	DocumentURL        string                 `json:"DOCUMENT_URL"`
 }
 
 // Item is a line of an estimate.
@@ -79,6 +94,11 @@ type Item struct {
 	Description    string          `json:"DESCRIPTION,omitempty"`
 	Quantity       fastbill.Number `json:"QUANTITY,omitempty"`
 	UnitPrice      fastbill.Number `json:"UNIT_PRICE,omitempty"`
+	// DiscountBaseAmount is the unit price before the item discount.
+	DiscountBaseAmount fastbill.Number `json:"DISCOUNT_BASE_AMOUNT,omitempty"`
+	DiscountPercent    fastbill.Number `json:"DISCOUNT_PERCENT,omitempty"`
+	// DiscountAmount is the discount per unit.
+	DiscountAmount fastbill.Number `json:"DISCOUNT_AMOUNT,omitempty"`
 	VatPercent     fastbill.Number `json:"VAT_PERCENT,omitempty"`
 	VatValue       fastbill.Number `json:"VAT_VALUE,omitempty"`
 	CompleteNet    fastbill.Number `json:"COMPLETE_NET,omitempty"`
@@ -100,21 +120,52 @@ type VatItem struct {
 type Request struct {
 	CustomerID           fastbill.ID `json:"CUSTOMER_ID,omitempty"`
 	CustomerCostCenterID fastbill.ID `json:"CUSTOMER_COSTCENTER_ID,omitempty"`
-	TemplateID           fastbill.ID `json:"TEMPLATE_ID,omitempty"`
-	TemplateHash         string      `json:"TEMPLATE_HASH,omitempty"`
-	Items                []Item      `json:"ITEMS,omitempty"`
+	// EstimateDate is YYYY-MM-DD.
+	EstimateDate string `json:"ESTIMATE_DATE,omitempty"`
+	// DiscountPercent is the document discount (0–100).
+	DiscountPercent fastbill.Number `json:"DISCOUNT_PERCENT,omitempty"`
+	// DiscountAmount is the document discount as an amount, always net.
+	DiscountAmount fastbill.Number `json:"DISCOUNT_AMOUNT,omitempty"`
+	IsGross        fastbill.Flag   `json:"IS_GROSS,omitempty"`
+	TemplateID     fastbill.ID     `json:"TEMPLATE_ID,omitempty"`
+	TemplateHash   string          `json:"TEMPLATE_HASH,omitempty"`
+	Items          []Item          `json:"ITEMS,omitempty"`
+}
+
+// UpdateRequest is the data of estimate.update. If only State is set, only
+// the status changes and no new PDF is created.
+type UpdateRequest struct {
+	EstimateID fastbill.ID `json:"ESTIMATE_ID"`
+	// State is one of the State constants or one of the StateCode
+	// constants.
+	State string `json:"STATE,omitempty"`
+	// DueDate is the date until which the estimate is valid, YYYY-MM-DD.
+	DueDate string `json:"DUE_DATE,omitempty"`
+	// DeleteExistingItems (1) replaces the items.
+	DeleteExistingItems fastbill.Flag `json:"DELETE_EXISTING_ITEMS,omitempty"`
+	Request
 }
 
 // CreateResponse is the answer of estimate.create.
 type CreateResponse struct {
+	Status        string      `json:"STATUS"`
+	EstimateID    fastbill.ID `json:"ESTIMATE_ID"`
+	InvoiceNumber string      `json:"INVOICE_NUMBER"`
+	DocumentID    fastbill.ID `json:"DOCUMENT_ID"`
+}
+
+// UpdateResponse is the answer of estimate.update.
+type UpdateResponse struct {
 	Status     string      `json:"STATUS"`
 	EstimateID fastbill.ID `json:"ESTIMATE_ID"`
 }
 
 // CreateInvoiceResponse is the answer of estimate.createinvoice.
 type CreateInvoiceResponse struct {
-	Status    string      `json:"STATUS"`
-	InvoiceID fastbill.ID `json:"INVOICE_ID"`
+	Status        string      `json:"STATUS"`
+	InvoiceID     fastbill.ID `json:"INVOICE_ID"`
+	DocumentID    fastbill.ID `json:"DOCUMENT_ID"`
+	InvoiceNumber string      `json:"INVOICE_NUMBER"`
 }
 
 // SendByEmailRequest is the data of estimate.sendbyemail.
