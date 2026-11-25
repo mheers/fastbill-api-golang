@@ -81,3 +81,15 @@ func TestErrors(t *testing.T) {
 		t.Errorf("Delete with failed status: %v", err)
 	}
 }
+
+func TestAPIFailures(t *testing.T) {
+	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"ERRORS":["boom"]}` })
+	c := item.NewClient(server.Client())
+	var apiErr *fastbill.APIError
+	if _, err := c.Get(ctx, fastbill.Page{}, nil); !errors.As(err, &apiErr) {
+		t.Errorf("Get: %v", err)
+	}
+	if err := c.Delete(ctx, "1"); !errors.As(err, &apiErr) {
+		t.Errorf("Delete: %v", err)
+	}
+}

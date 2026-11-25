@@ -133,3 +133,19 @@ func TestErrors(t *testing.T) {
 		t.Errorf("Delete: %v", err)
 	}
 }
+
+func TestAPIFailures(t *testing.T) {
+	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"ERRORS":["boom"]}` })
+	c := recurring.NewClient(server.Client())
+	var apiErr *fastbill.APIError
+	for name, call := range map[string]func() error{
+		"get":    func() error { _, err := c.Get(ctx, fastbill.Page{}, nil); return err },
+		"create": func() error { _, err := c.Create(ctx, &recurring.Request{}); return err },
+		"update": func() error { _, err := c.Update(ctx, &recurring.Request{}); return err },
+		"delete": func() error { return c.Delete(ctx, "1") },
+	} {
+		if err := call(); !errors.As(err, &apiErr) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}

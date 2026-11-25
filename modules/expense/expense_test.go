@@ -104,3 +104,15 @@ func TestErrors(t *testing.T) {
 		t.Errorf("Create with failed status: %v", err)
 	}
 }
+
+func TestAPIFailures(t *testing.T) {
+	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"ERRORS":["boom"]}` })
+	c := expense.NewClient(server.Client())
+	var apiErr *fastbill.APIError
+	if _, err := c.Get(ctx, fastbill.Page{}, nil); !errors.As(err, &apiErr) {
+		t.Errorf("Get: %v", err)
+	}
+	if _, err := c.Create(ctx, &expense.Request{}, nil, ""); !errors.As(err, &apiErr) {
+		t.Errorf("Create: %v", err)
+	}
+}

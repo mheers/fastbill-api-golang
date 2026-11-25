@@ -222,3 +222,29 @@ func TestErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestAPIFailures(t *testing.T) {
+	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"ERRORS":["boom"]}` })
+	c := invoice.NewClient(server.Client())
+	var apiErr *fastbill.APIError
+	for name, call := range map[string]func() error{
+		"get":      func() error { _, err := c.Get(ctx, fastbill.Page{}, nil); return err },
+		"create":   func() error { _, err := c.Create(ctx, &invoice.Request{}); return err },
+		"update":   func() error { _, err := c.Update(ctx, &invoice.Request{}); return err },
+		"delete":   func() error { return c.Delete(ctx, "1") },
+		"complete": func() error { _, err := c.Complete(ctx, "1"); return err },
+		"cancel":   func() error { _, err := c.Cancel(ctx, "1"); return err },
+		"cancel partial": func() error {
+			_, err := c.CancelPartial(ctx, &invoice.PartialCancellationRequest{InvoiceID: "1"})
+			return err
+		},
+		"lock":        func() error { return c.Lock(ctx, "1") },
+		"sendbyemail": func() error { return c.SendByEmail(ctx, &invoice.SendByEmailRequest{InvoiceID: "1"}) },
+		"sendbypost":  func() error { _, err := c.SendByPost(ctx, "1"); return err },
+		"setpaid":     func() error { _, err := c.SetPaid(ctx, &invoice.SetPaidRequest{InvoiceID: "1"}); return err },
+	} {
+		if err := call(); !errors.As(err, &apiErr) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
