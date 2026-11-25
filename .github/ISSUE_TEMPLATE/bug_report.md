@@ -1,38 +1,37 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
-
+about: Report a problem with the client
+title: ""
+labels: bug
+assignees: ""
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**What happened?**
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+A clear description of the behaviour and what you expected instead.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+**Which service or action?**
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+For example `invoice.create`, `customer.get`, `webhook.ParseEvent`, or the
+transport itself.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+**Minimal reproduction**
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+```go
+// The smallest program or test that shows the problem.
+```
+
+If possible, include the request body FastBill received and the response
+`RESPONSE` object. **Remove your email address, API key and any customer
+data first.**
+
+**Environment**
+
+- Go version (`go version`):
+- Client version or commit:
+- FastBill plan (only relevant for rate limits):
 
 **Additional context**
-Add any other context about the problem here.
+
+Anything else that helps: logs, the FastBill documentation page for the
+action, or a failing test.

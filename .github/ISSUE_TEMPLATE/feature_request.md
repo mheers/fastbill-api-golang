@@ -1,20 +1,31 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
-assignees: ''
-
+about: Suggest a service, field or API improvement
+title: ""
+labels: enhancement
+assignees: ""
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+**Which FastBill action or field is missing?**
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+Name the service (`invoice.get`, `estimate.update`, …) and link the FastBill
+documentation page. If the change is a new field, give the JSON name and its
+type.
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+**What are you trying to do?**
+
+Describe the use case, not only the API shape. For example: "export all
+invoices of a month, including the document discount."
+
+**Proposed API**
+
+If you have an idea for the Go signature or struct, sketch it here.
+
+```go
+// Optional.
+```
 
 **Additional context**
-Add any other context or screenshots about the feature request here.
+
+Anything else that helps, such as a sample response with credentials and
+customer data removed.
