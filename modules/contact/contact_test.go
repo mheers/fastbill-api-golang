@@ -57,11 +57,14 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdateAndDelete(t *testing.T) {
-	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"STATUS":"success","CONTACT_ID":"813"}` })
+	server := fastbilltest.New(t, func(fastbilltest.Received) string {
+		return `{"STATUS":"success","ADDITIONAL_INFO":"create_new","CONTACT_ID":"900"}`
+	})
 	c := contact.NewClient(server.Client())
 
-	if err := c.Update(ctx, &contact.Contact{ContactID: "813", CustomerID: "59", Phone: "+49 30 654321"}); err != nil {
-		t.Error(err)
+	res, err := c.Update(ctx, &contact.Contact{ContactID: "813", CustomerID: "59", Phone: "+49 30 654321"})
+	if err != nil || res.ContactID != "900" || res.AdditionalInfo != contact.UpdateCreateNew {
+		t.Errorf("Update = %+v, %v", res, err)
 	}
 	got := server.Last(t)
 	if got.Service != "contact.update" {
@@ -94,7 +97,7 @@ func TestErrors(t *testing.T) {
 	if err := c.Delete(ctx, "813", "59"); !errors.As(err, &apiErr) {
 		t.Errorf("Delete: %v", err)
 	}
-	if err := c.Update(ctx, &contact.Contact{ContactID: "813"}); !errors.As(err, &apiErr) {
+	if _, err := c.Update(ctx, &contact.Contact{ContactID: "813"}); !errors.As(err, &apiErr) {
 		t.Errorf("Update with failed status: %v", err)
 	}
 }

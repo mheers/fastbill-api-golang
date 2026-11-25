@@ -19,7 +19,7 @@ const customerJSON = `{
 	"DAYS_FOR_PAYMENT": 14, "PAYMENT_TYPE": "1", "SHOW_PAYMENT_NOTICE": 1, "TOP": "0",
 	"ACCOUNT_RECEIVABLE": "10042", "ORGANIZATION": "Beispiel GmbH", "FIRST_NAME": "Erika", "LAST_NAME": "Mustermann",
 	"ADDRESS": "Hauptstraße 1", "ZIPCODE": "10115", "CITY": "Berlin", "COUNTRY_CODE": "DE",
-	"EMAIL": "erika@example.com", "VAT_ID": "DE123456789", "CURRENCY_CODE": "EUR",
+	"EMAIL": "erika@example.com", "CC": "buchhaltung@example.com", "BCC": "archiv@example.com", "VAT_ID": "DE123456789", "CURRENCY_CODE": "EUR",
 	"BUYER_REFERENCE": "991-12345-67", "GLN": "4012345000009",
 	"CREATED": "2026-01-15 10:00:00", "LASTUPDATE": "2026-09-01 12:30:00", "TAGS": "retainer",
 	"DOCUMENT_HISTORY_URL": "https://my.fastbill.com/history/abc"
@@ -43,6 +43,9 @@ func TestGet(t *testing.T) {
 	}
 	if cu.AccountReceivable != "10042" || cu.BuyerReference != "991-12345-67" || cu.GLN != "4012345000009" || cu.DocumentHistoryURL == "" {
 		t.Errorf("new fields = %+v", cu)
+	}
+	if cu.CC != "buchhaltung@example.com" || cu.BCC != "archiv@example.com" {
+		t.Errorf("copy addresses = %+v", cu)
 	}
 	got := server.Last(t)
 	if got.Service != "customer.get" || got.Limit != 100 || got.Offset != 100 {
@@ -71,6 +74,8 @@ func TestCreate(t *testing.T) {
 		LastName:        "Mustermann",
 		DaysForPayment:  fastbill.NewInt(14),
 		BuyerReference:  "991-12345-67",
+		CC:              "buchhaltung@example.com",
+		BCC:             "archiv@example.com",
 		NewsletterOptIn: fastbill.No,
 	})
 	if err != nil || res.CustomerID != "60" || res.CustomerNumber != "1043" {
@@ -82,7 +87,8 @@ func TestCreate(t *testing.T) {
 	}
 	fastbilltest.JSONEqual(t, got.Data, `{
 		"CUSTOMER_TYPE": "consumer", "LAST_NAME": "Mustermann", "DAYS_FOR_PAYMENT": 14,
-		"BUYER_REFERENCE": "991-12345-67", "NEWSLETTER_OPTIN": "0"
+		"BUYER_REFERENCE": "991-12345-67", "CC": "buchhaltung@example.com", "BCC": "archiv@example.com",
+		"NEWSLETTER_OPTIN": "0"
 	}`)
 }
 
@@ -90,8 +96,9 @@ func TestUpdateAndDelete(t *testing.T) {
 	server := fastbilltest.New(t, func(fastbilltest.Received) string { return `{"STATUS":"success","CUSTOMER_ID":"59"}` })
 	c := customer.NewClient(server.Client())
 
-	if err := c.Update(ctx, &customer.Customer{CustomerID: "59", Email: "new@example.com", ShowPaymentNotice: fastbill.Yes}); err != nil {
-		t.Error(err)
+	res, err := c.Update(ctx, &customer.Customer{CustomerID: "59", Email: "new@example.com", ShowPaymentNotice: fastbill.Yes})
+	if err != nil || res.CustomerID != "59" {
+		t.Errorf("Update = %+v, %v", res, err)
 	}
 	got := server.Last(t)
 	if got.Service != "customer.update" {
@@ -123,6 +130,9 @@ func TestErrors(t *testing.T) {
 	}
 	if _, err := c.Create(ctx, &customer.Customer{}); !errors.As(err, &apiErr) {
 		t.Errorf("Create: %v", err)
+	}
+	if _, err := c.Update(ctx, &customer.Customer{CustomerID: "59"}); !errors.As(err, &apiErr) {
+		t.Errorf("Update with failed status: %v", err)
 	}
 	if err := c.Delete(ctx, "59"); !errors.As(err, &apiErr) {
 		t.Errorf("Delete with failed status: %v", err)

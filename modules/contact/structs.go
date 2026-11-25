@@ -12,6 +12,15 @@ type Filter struct {
 	Term string `json:"TERM,omitempty"`
 }
 
+// Results of contact.update (ADDITIONAL_INFO).
+const (
+	// UpdateUpdatedOld means the contact was updated in place.
+	UpdateUpdatedOld = "updated_old"
+	// UpdateCreateNew means the contact was locked and replaced by a new
+	// one; the response carries its CONTACT_ID.
+	UpdateCreateNew = "create_new"
+)
+
 // Contact is a contact person as contact.get returns it, and the data of
 // contact.create and contact.update.
 type Contact struct {
@@ -51,6 +60,15 @@ type Contact struct {
 type CreateResponse struct {
 	Status    string      `json:"STATUS"`
 	ContactID fastbill.ID `json:"CONTACT_ID"`
+}
+
+// UpdateResponse is the answer of contact.update. AdditionalInfo is
+// UpdateUpdatedOld or UpdateCreateNew; ContactID is only set when the
+// contact was replaced.
+type UpdateResponse struct {
+	Status         string      `json:"STATUS"`
+	AdditionalInfo string      `json:"ADDITIONAL_INFO"`
+	ContactID      fastbill.ID `json:"CONTACT_ID"`
 }
 
 type idRequest struct {

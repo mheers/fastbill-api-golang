@@ -40,8 +40,12 @@ func (c *Client) Create(ctx context.Context, customer *Customer) (CreateResponse
 
 // Update changes the customer with customer.CustomerID. Only the fields
 // that are set are sent.
-func (c *Client) Update(ctx context.Context, customer *Customer) error {
-	return c.status(ctx, "customer.update", customer)
+func (c *Client) Update(ctx context.Context, customer *Customer) (UpdateResponse, error) {
+	var res UpdateResponse
+	if err := c.r.Do(ctx, fastbill.DataRequest("customer.update", customer), &res); err != nil {
+		return res, err
+	}
+	return res, fastbill.StatusResponse{Status: res.Status}.Err("customer.update")
 }
 
 // Delete deletes a customer.

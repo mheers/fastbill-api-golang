@@ -70,9 +70,13 @@ type Customer struct {
 	Fax              string `json:"FAX,omitempty"`
 	Mobile           string `json:"MOBILE,omitempty"`
 	Email            string `json:"EMAIL,omitempty"`
-	Website          string `json:"WEBSITE,omitempty"`
-	VatID            string `json:"VAT_ID,omitempty"`
-	CurrencyCode     string `json:"CURRENCY_CODE,omitempty"`
+	// CC and BCC are comma-separated copy addresses for documents sent to
+	// the customer.
+	CC           string `json:"CC,omitempty"`
+	BCC          string `json:"BCC,omitempty"`
+	Website      string `json:"WEBSITE,omitempty"`
+	VatID        string `json:"VAT_ID,omitempty"`
+	CurrencyCode string `json:"CURRENCY_CODE,omitempty"`
 	// BuyerReference is the buyer reference (Leitweg-ID) for e-invoices.
 	BuyerReference string `json:"BUYER_REFERENCE,omitempty"`
 	// GLN is the GS1 Global Location Number.
@@ -89,6 +93,12 @@ type CreateResponse struct {
 	Status         string      `json:"STATUS"`
 	CustomerID     fastbill.ID `json:"CUSTOMER_ID"`
 	CustomerNumber string      `json:"CUSTOMER_NUMBER"`
+}
+
+// UpdateResponse is the answer of customer.update.
+type UpdateResponse struct {
+	Status     string      `json:"STATUS"`
+	CustomerID fastbill.ID `json:"CUSTOMER_ID"`
 }
 
 type idRequest struct {
